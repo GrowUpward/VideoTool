@@ -20,7 +20,7 @@ from config import HTTP_PROXY, HTTPS_PROXY
 
 summary_executor = ThreadPoolExecutor(max_workers=2)
 
-app = FastAPI(title="万能视频下载器")
+app = FastAPI(title="AI 视频助手")
 
 # Paths
 FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"

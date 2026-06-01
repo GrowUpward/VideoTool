@@ -3,8 +3,8 @@
     <n-message-provider>
       <div class="app">
         <header class="app-header">
-          <h1>万能视频下载器</h1>
-          <p class="subtitle">支持 B站、YouTube、抖音等 1800+ 平台 · 一键解析下载</p>
+          <h1>AI 视频助手</h1>
+          <p class="subtitle">1800+ 平台视频下载 · AI 智能摘要与要点提炼</p>
         </header>
 
         <UrlInput @parsed="onVideoParsed" :loading="parsing" />
