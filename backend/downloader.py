@@ -1,17 +1,32 @@
 import asyncio
+import re
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import yt_dlp
 
-from config import DOWNLOAD_DIR, HTTP_PROXY, HTTPS_PROXY
+from config import BASE_DIR, DOWNLOAD_DIR, HTTP_PROXY, HTTPS_PROXY
 from models import VideoInfo, FormatOption, DownloadTask
 
 executor = ThreadPoolExecutor(max_workers=4)
 
 # In-memory progress store: task_id -> DownloadTask
 progress_store: dict[str, DownloadTask] = {}
+
+
+def extract_url(text: str) -> str:
+    """从分享文本中提取 URL（如 B 站 App 分享格式：'【标题】 https://b23.tv/xxx'），并解析短链接。"""
+    match = re.search(r'https?://[^\s"\'】）)]+', text.strip())
+    url = match.group(0) if match else text.strip()
+    # 解析短链接
+    if "b23.tv" in url:
+        try:
+            resp = http_requests.head(url, allow_redirects=True, timeout=10)
+            url = resp.url
+        except Exception:
+            pass
+    return url
 
 
 def format_duration(seconds) -> str:
@@ -32,6 +47,10 @@ def _build_ydl_opts(extra: Optional[dict] = None) -> dict:
         "restrictfilenames": True,
         "windowsfilenames": True,
     }
+    # B 站 Cookies（解决 412 反爬）
+    cookiefile = BASE_DIR / "cookies.txt"
+    if cookiefile.exists():
+        opts["cookiefile"] = str(cookiefile)
     if HTTP_PROXY:
         opts["proxy"] = HTTP_PROXY
     elif HTTPS_PROXY:
@@ -79,6 +98,7 @@ def _parse_formats(info: dict) -> list[FormatOption]:
 
 
 def parse_video_info(url: str) -> VideoInfo:
+    url = extract_url(url)
     info = _extract_info(url)
     formats = _parse_formats(info)
     dur = info.get("duration")
@@ -159,6 +179,7 @@ def _download_sync(task_id: str, url: str, quality: str):
 
 
 async def start_download(url: str, quality: str) -> str:
+    url = extract_url(url)
     task_id = str(uuid.uuid4())
     progress_store[task_id] = DownloadTask(task_id=task_id)
     loop = asyncio.get_event_loop()

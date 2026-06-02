@@ -6,6 +6,7 @@ node_modules/
 dist/
 backend/downloads/
 backend/cache/
+backend/cookies.txt
 *.egg-info/
 .venv/
 venv/
@@ -15,5 +16,6 @@ venv/
 *.zip
 .claude
 *.md
+!README.md
 free-video-downloader-master/
 brower_test/

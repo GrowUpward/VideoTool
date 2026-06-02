@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 import requests as http_requests
 
 from models import ParseRequest, DownloadRequest, VideoInfo, SummarizeRequest, SummaryResult, ChatRequest
-from downloader import parse_video_info, start_download, get_task
+from downloader import parse_video_info, start_download, get_task, extract_url
 from subtitles import extract_subtitles
 from summarizer import summarize_stream, chat_stream
 from transcription import transcribe_audio, get_last_error as get_transcribe_error
@@ -100,6 +100,7 @@ async def download_progress(task_id: str):
 @app.post("/api/summarize")
 async def summarize_video(req: SummarizeRequest):
     """AI 视频总结：提取字幕 → 流式 GPT 总结 (SSE)。"""
+    req.url = extract_url(req.url)
 
     async def event_generator():
         loop = asyncio.get_event_loop()
@@ -157,6 +158,7 @@ async def summarize_video(req: SummarizeRequest):
 @app.post("/api/chat")
 async def chat_with_video(req: ChatRequest):
     """基于视频内容的 AI 问答 (SSE 流式)。"""
+    req.url = extract_url(req.url)
 
     async def event_generator():
         subtitle_text = req.subtitle_text

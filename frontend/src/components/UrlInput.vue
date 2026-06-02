@@ -46,18 +46,33 @@ const props = defineProps({ loading: Boolean })
 const emit = defineEmits(['parsed'])
 const url = ref('')
 
+/**
+ * 从分享文本中提取 URL（如 B 站 App 分享格式：'【标题】 https://b23.tv/xxx'）
+ */
+function extractUrl(text) {
+  const trimmed = text.trim()
+  // 尝试匹配 http/https 链接
+  const match = trimmed.match(/https?:\/\/[^\s"'】）)]+/)
+  return match ? match[0] : trimmed
+}
+
 function handleParse() {
   if (url.value.trim()) {
-    emit('parsed', url.value.trim())
+    emit('parsed', extractUrl(url.value))
   }
 }
 
 function handlePaste(e) {
   nextTick(() => {
     const pasted = e.target.value || url.value
-    if (pasted && pasted.startsWith('http')) {
+    // 提取 URL 并回填到输入框
+    const extracted = extractUrl(pasted)
+    if (extracted !== pasted.trim()) {
+      url.value = extracted
+    }
+    if (extracted && extracted.startsWith('http')) {
       // Auto-parse on paste
-      setTimeout(() => emit('parsed', pasted.trim()), 300)
+      setTimeout(() => emit('parsed', extracted), 300)
     }
   })
 }

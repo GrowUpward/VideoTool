@@ -34,6 +34,7 @@ def _time_to_seconds(time_str: str) -> float:
 
 
 def _build_opts() -> dict:
+    from config import BASE_DIR
     opts = {
         "quiet": True,
         "no_warnings": True,
@@ -43,6 +44,9 @@ def _build_opts() -> dict:
         "subtitlesformat": "vtt",
         "skip_download": True,
     }
+    cookiefile = BASE_DIR / "cookies.txt"
+    if cookiefile.exists():
+        opts["cookiefile"] = str(cookiefile)
     if HTTP_PROXY:
         opts["proxy"] = HTTP_PROXY
     elif HTTPS_PROXY:
@@ -52,11 +56,15 @@ def _build_opts() -> dict:
 
 def _build_info_opts() -> dict:
     """Metadata-first mode to avoid direct subtitle file download limits."""
+    from config import BASE_DIR
     opts = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
     }
+    cookiefile = BASE_DIR / "cookies.txt"
+    if cookiefile.exists():
+        opts["cookiefile"] = str(cookiefile)
     if HTTP_PROXY:
         opts["proxy"] = HTTP_PROXY
     elif HTTPS_PROXY:
@@ -202,9 +210,21 @@ def _is_bilibili_url(url: str) -> bool:
     return "bilibili.com" in url or "b23.tv" in url
 
 
+def _resolve_short_url(url: str) -> str:
+    """解析短链接（如 b23.tv）获取真实 URL。"""
+    try:
+        resp = requests.head(url, allow_redirects=True, timeout=10)
+        return resp.url
+    except Exception:
+        return url
+
+
 def _extract_bilibili(url: str) -> dict:
     """Bilibili-specific subtitle extraction via dm/view API."""
     try:
+        # 短链接先解析为完整 URL
+        if "b23.tv" in url:
+            url = _resolve_short_url(url)
         m = re.search(r"(BV[a-zA-Z0-9]+)", url)
         if not m:
             return _EMPTY_RESULT
@@ -350,6 +370,10 @@ def extract_subtitles(url: str) -> dict:
     """
     global _last_error
     _last_error = ""
+
+    # 解析短链接（如 b23.tv）
+    if "b23.tv" in url:
+        url = _resolve_short_url(url)
 
     # Bilibili-specific extraction
     if _is_bilibili_url(url):
